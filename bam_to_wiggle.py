@@ -46,13 +46,11 @@ def main(bam_file, chrom='all', start=0, end=None,
     if not (os.path.exists(outfile) and os.path.getsize(outfile) > 0):
         # Use a temp file to avoid any possiblity of not having write
         # permission
-        wig_file_f = "%s.f.wig" % os.path.splitext(outfile)[0]
-        wig_file_r = "%s.r.wig" % os.path.splitext(outfile)[0]
-        out_handle_f = open(wig_file_f, "w")
-        out_handle_r = open(wig_file_r, "w")
+        wigile = "%s.starts.wig" % os.path.splitext(outfile)[0]
+        out_handle = open(wigile, "w")
 
-        with closing(out_handle_f) and closing(out_handle_r):
-            write_bam_track(bam_file, regions, out_handle_f, out_handle_r)
+        with closing(out_handle):
+            write_bam_track(bam_file, regions, out_handle)
 
 
 @contextmanager
@@ -64,16 +62,13 @@ def indexed_bam(bam_file):
     sam_reader.close()
 
 
-def write_bam_track(bam_file, regions, out_handle_f, out_handle_r):
-    header = "track %s\n" % " ".join(
-        [
-            "type=wiggle_0",
-            "name=%s" % os.path.splitext(os.path.split(bam_file)[-1])[0],
-            "visibility=full",
-        ]
-    )
-    out_handle_f.write(header)
-    out_handle_r.write(header)
+def gen_header(bam_file, suffix):
+    track_name = "name=%s_%s" % (os.path.splitext(
+        os.path.split(bam_file)[-1])[0], suffix)
+    return "track type=wiggle_0 %s visibility=full\n" % track_name
+
+
+def write_bam_track(bam_file, regions, out_handle):
     with indexed_bam(bam_file) as work_bam:
         sizes = zip(work_bam.references, work_bam.lengths)
         if len(regions) == 1 and regions[0][0] == "all":
@@ -82,8 +77,6 @@ def write_bam_track(bam_file, regions, out_handle_f, out_handle_r):
             if end is None and chrom in work_bam.references:
                 end = work_bam.lengths[work_bam.references.index(chrom)]
             assert end is not None, "Could not find %s in header" % chrom
-            out_handle_f.write("variableStep chrom=%s\n" % chrom)
-            out_handle_r.write("variableStep chrom=%s\n" % chrom)
 
             # Since the file is sorted, we could actually optimise this bit
             # out...currently fails cost benefit analysis so will wait until
@@ -105,16 +98,20 @@ def write_bam_track(bam_file, regions, out_handle_f, out_handle_r):
                     else:
                         start_map_f[start] = 1
             # Write to file
+            out_handle.write(gen_header(bam_file, 'f'))
+            out_handle.write("variableStep chrom=%s\n" % chrom)
             for i in range(start, end):
                 if i in start_map_f:
-                    out_handle_f.write("%s %.1f\n" % (i, start_map_f[i]))
+                    out_handle.write("%s %.1f\n" % (i, start_map_f[i]))
                 else:
-                    out_handle_f.write("%s 0.0\n" % i)
+                    out_handle.write("%s 0.0\n" % i)
+            out_handle.write(gen_header(bam_file, 'r'))
+            out_handle.write("variableStep chrom=%s\n" % chrom)
             for i in range(start, end):
                 if i in start_map_r:
-                    out_handle_r.write("%s %.1f\n" % (i, start_map_r[i]))
+                    out_handle.write("%s %.1f\n" % (i, start_map_r[i]))
                 else:
-                    out_handle_r.write("%s 0.0\n" % i)
+                    out_handle.write("%s 0.0\n" % i)
 
 
 if __name__ == "__main__":
