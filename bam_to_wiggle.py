@@ -23,7 +23,8 @@ If not specified, these will be assumed to be present in the system path.
 The script requires:
     pysam (http://code.google.com/p/pysam/)
     wigToBigWig from UCSC (http://hgdownload.cse.ucsc.edu/admin/exe/)
-If a configuration file is used, then PyYAML is also required (http://pyyaml.org/)
+If a configuration file is used, then PyYAML is also required
+(http://pyyaml.org/)
 """
 import os
 import sys
@@ -34,14 +35,9 @@ from contextlib import contextmanager, closing
 
 import pysam
 
-from bcbio.pipeline.config_utils import load_config, get_program
 
-def main(bam_file, config_file=None, chrom='all', start=0, end=None,
+def main(bam_file, chrom='all', start=0, end=None,
          outfile=None, normalize=False, use_tempfile=False):
-    if config_file:
-        config = load_config(config_file)
-    else:
-        config = {"program": {"ucsc_bigwig" : "wigToBigWig"}}
     if outfile is None:
         outfile = "%s.bigwig" % os.path.splitext(bam_file)[0]
     if start > 0:
@@ -61,31 +57,32 @@ def main(bam_file, config_file=None, chrom='all', start=0, end=None,
             wig_file = "%s.wig" % os.path.splitext(outfile)[0]
             out_handle = open(wig_file, "w")
         with closing(out_handle):
-            chr_sizes, wig_valid = write_bam_track(bam_file, regions, config, out_handle,
+            chr_sizes, wig_valid = write_bam_track(bam_file, regions, out_handle,
                                                    normalize)
         try:
             if wig_valid:
-                convert_to_bigwig(wig_file, chr_sizes, config, outfile)
+                convert_to_bigwig(wig_file, chr_sizes, outfile)
         finally:
-            os.remove(wig_file)
+            #os.remove(wig_file)
+            pass
+
 
 @contextmanager
-def indexed_bam(bam_file, config):
+def indexed_bam(bam_file):
     if not os.path.exists(bam_file + ".bai"):
         pysam.index(bam_file)
     sam_reader = pysam.Samfile(bam_file, "rb")
     yield sam_reader
     sam_reader.close()
 
-def write_bam_track(bam_file, regions, config, out_handle, normalize):
+
+def write_bam_track(bam_file, regions, out_handle, normalize):
     out_handle.write("track %s\n" % " ".join(["type=wiggle_0",
         "name=%s" % os.path.splitext(os.path.split(bam_file)[-1])[0],
         "visibility=full",
         ]))
-    normal_scale = 1e6
     is_valid = False
-    with indexed_bam(bam_file, config) as work_bam:
-        total = sum(1 for r in work_bam.fetch() if not r.is_unmapped) if normalize else None
+    with indexed_bam(bam_file) as work_bam:
         sizes = zip(work_bam.references, work_bam.lengths)
         if len(regions) == 1 and regions[0][0] == "all":
             regions = [(name, 0, length) for name, length in sizes]
@@ -95,15 +92,12 @@ def write_bam_track(bam_file, regions, config, out_handle, normalize):
             assert end is not None, "Could not find %s in header" % chrom
             out_handle.write("variableStep chrom=%s\n" % chrom)
             for col in work_bam.pileup(chrom, start, end):
-                if normalize:
-                    n = float(col.n) / total * normal_scale
-                else:
-                    n = col.n
-                out_handle.write("%s %.1f\n" % (col.pos+1, n))
+                out_handle.write("%s %.1f\n" % (col.pos+1, col.n))
                 is_valid = True
     return sizes, is_valid
 
-def convert_to_bigwig(wig_file, chr_sizes, config, bw_file=None):
+
+def convert_to_bigwig(wig_file, chr_sizes, bw_file=None):
     if not bw_file:
         bw_file = "%s.bigwig" % (os.path.splitext(wig_file)[0])
     size_file = "%s-sizes.txt" % (os.path.splitext(wig_file)[0])
@@ -111,32 +105,25 @@ def convert_to_bigwig(wig_file, chr_sizes, config, bw_file=None):
         for chrom, size in chr_sizes:
             out_handle.write("%s\t%s\n" % (chrom, size))
     try:
-        cl = [get_program("ucsc_bigwig", config, default="wigToBigWig"), wig_file, size_file, bw_file]
+        cl = ["./wigToBigWig", wig_file, size_file, bw_file]
         subprocess.check_call(cl)
     finally:
-        os.remove(size_file)
+        #os.remove(size_file)
+        pass
     return bw_file
 
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-o", "--outfile", dest="outfile")
-    parser.add_option("-c", "--chrom", dest="chrom")
-    parser.add_option("-s", "--start", dest="start")
-    parser.add_option("-e", "--end", dest="end")
-    parser.add_option("-n", "--normalize", dest="normalize",
-                      action="store_true", default=False)
-    parser.add_option("-t", "--tempfile", dest="use_tempfile",
-                      action="store_true", default=False)
     (options, args) = parser.parse_args()
-    if len(args) not in [1, 2]:
+    if len(args) != 1:
         print "Incorrect arguments"
         print __doc__
         sys.exit()
     kwargs = dict(
         outfile=options.outfile,
-        chrom=options.chrom or 'all',
-        start=options.start or 0,
-        end=options.end,
-        normalize=options.normalize,
-        use_tempfile=options.use_tempfile)
+        chrom='all',
+        start=0,
+        normalize=False,
+        use_tempfile=False)
     main(*args, **kwargs)
