@@ -59,12 +59,6 @@ def main(bam_file, chrom='all', start=0, end=None,
         with closing(out_handle):
             chr_sizes, wig_valid = write_bam_track(bam_file, regions, out_handle,
                                                    normalize)
-        try:
-            if wig_valid:
-                convert_to_bigwig(wig_file, chr_sizes, outfile)
-        finally:
-            #os.remove(wig_file)
-            pass
 
 
 @contextmanager
@@ -96,21 +90,6 @@ def write_bam_track(bam_file, regions, out_handle, normalize):
                 is_valid = True
     return sizes, is_valid
 
-
-def convert_to_bigwig(wig_file, chr_sizes, bw_file=None):
-    if not bw_file:
-        bw_file = "%s.bigwig" % (os.path.splitext(wig_file)[0])
-    size_file = "%s-sizes.txt" % (os.path.splitext(wig_file)[0])
-    with open(size_file, "w") as out_handle:
-        for chrom, size in chr_sizes:
-            out_handle.write("%s\t%s\n" % (chrom, size))
-    try:
-        cl = ["./wigToBigWig", wig_file, size_file, bw_file]
-        subprocess.check_call(cl)
-    finally:
-        #os.remove(size_file)
-        pass
-    return bw_file
 
 if __name__ == "__main__":
     parser = OptionParser()
