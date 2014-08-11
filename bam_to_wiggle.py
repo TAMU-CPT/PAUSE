@@ -1,11 +1,9 @@
 #!/usr/bin/env python
-"""Convert BAM files to Wig file format for PAUSE.
+"""Extract read start from BAM files to Wig format for PAUSE.
 
 Usage:
     bam_to_wiggle.py <BAM file>
 
-The script requires:
-    pysam (http://code.google.com/p/pysam/)
 """
 import os
 import sys
