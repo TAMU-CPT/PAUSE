@@ -1,26 +1,11 @@
 #!/usr/bin/env python
-"""Convert BAM files to BigWig file format in a specified region.
+"""Convert BAM files to Wig file format for PAUSE.
 
 Usage:
-    bam_to_wiggle.py <BAM file> [<YAML config>]
-    [--outfile=<output file name>]
-
-chrom start and end are optional, in which case they default to everything.
-The normalize flag adjusts counts to reads per million.
-
-The config file is in YAML format and specifies the location of the wigToBigWig
-program from UCSC:
-
-program:
-  ucsc_bigwig: wigToBigWig
-
-If not specified, these will be assumed to be present in the system path.
+    bam_to_wiggle.py <BAM file>
 
 The script requires:
     pysam (http://code.google.com/p/pysam/)
-    wigToBigWig from UCSC (http://hgdownload.cse.ucsc.edu/admin/exe/)
-If a configuration file is used, then PyYAML is also required
-(http://pyyaml.org/)
 """
 import os
 import sys
