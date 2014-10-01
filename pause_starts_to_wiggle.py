@@ -69,14 +69,20 @@ def write_bam_track(bam_file, regions, out_handle_f, out_handle_r):
             start_map_r = {}
 
             for col in work_bam.fetch(chrom, start, end):
+                #print " ".join(map(str, [col.qstart, col.qend, col.rlen, col.aend, col.alen, col.pos]))
+                #   qstart   qend   rlen   aend    alen   pos
+                #   0        145    145    13537   143    13394
+                # reverse strand
+                # start is  13395
+                # end is 13537
                 if col.is_reverse:
-                    start = col.pos + col.qstart + col.rlen
+                    start = col.aend
                     if start in start_map_r:
                         start_map_r[start] += 1
                     else:
                         start_map_r[start] = 1
                 else:
-                    start = col.pos + col.qend
+                    start = col.pos + 1
                     if start in start_map_f:
                         start_map_f[start] += 1
                     else:
