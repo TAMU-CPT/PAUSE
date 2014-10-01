@@ -7,7 +7,6 @@ Usage:
 """
 import os
 import sys
-import tempfile
 from optparse import OptionParser
 from contextlib import contextmanager, closing
 
@@ -29,11 +28,13 @@ def main(bam_file, chrom='all', start=0, end=None,
     if not (os.path.exists(outfile) and os.path.getsize(outfile) > 0):
         # Use a temp file to avoid any possiblity of not having write
         # permission
-        wigile = "%s.starts.wig" % os.path.splitext(outfile)[0]
-        out_handle = open(wigile, "w")
+        wigfile_f = "%s.starts.f.wig" % os.path.splitext(outfile)[0]
+        wigfile_r = "%s.starts.r.wig" % os.path.splitext(outfile)[0]
+        out_handle_f = open(wigfile_f, "w")
+        out_handle_r = open(wigfile_r, "w")
 
-        with closing(out_handle):
-            write_bam_track(bam_file, regions, out_handle)
+        with closing(out_handle_f) and closing(out_handle_r):
+            write_bam_track(bam_file, regions, out_handle_f, out_handle_r)
 
 
 @contextmanager
@@ -51,7 +52,7 @@ def gen_header(bam_file, suffix):
     return "track type=wiggle_0 %s visibility=full\n" % track_name
 
 
-def write_bam_track(bam_file, regions, out_handle):
+def write_bam_track(bam_file, regions, out_handle_f, out_handle_r):
     with indexed_bam(bam_file) as work_bam:
         sizes = zip(work_bam.references, work_bam.lengths)
         if len(regions) == 1 and regions[0][0] == "all":
@@ -81,20 +82,20 @@ def write_bam_track(bam_file, regions, out_handle):
                     else:
                         start_map_f[start] = 1
             # Write to file
-            out_handle.write(gen_header(bam_file, 'f'))
-            out_handle.write("variableStep chrom=%s\n" % chrom)
+            out_handle_f.write(gen_header(bam_file, 'f'))
+            out_handle_f.write("variableStep chrom=%s\n" % chrom)
             for i in range(start, end):
                 if i in start_map_f:
-                    out_handle.write("%s %.1f\n" % (i, start_map_f[i]))
+                    out_handle_f.write("%s %.1f\n" % (i, start_map_f[i]))
                 else:
-                    out_handle.write("%s 0.0\n" % i)
-            out_handle.write(gen_header(bam_file, 'r'))
-            out_handle.write("variableStep chrom=%s\n" % chrom)
+                    out_handle_f.write("%s 0.0\n" % i)
+            out_handle_r.write(gen_header(bam_file, 'r'))
+            out_handle_r.write("variableStep chrom=%s\n" % chrom)
             for i in range(start, end):
                 if i in start_map_r:
-                    out_handle.write("%s %.1f\n" % (i, start_map_r[i]))
+                    out_handle_r.write("%s %.1f\n" % (i, start_map_r[i]))
                 else:
-                    out_handle.write("%s 0.0\n" % i)
+                    out_handle_r.write("%s 0.0\n" % i)
 
 
 if __name__ == "__main__":
