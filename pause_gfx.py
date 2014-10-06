@@ -14,7 +14,7 @@ class Track(object):
         self.dmax = numpy.max(self.data[:, 1])
         self.dmin = numpy.min(self.data[:, 1])
         self.amax = numpy.max(numpy.abs(self.data[:, 1]))
-        self.length = len(data[:, 1])
+        self.length = numpy.max(data[:, 0])
         # Invert data for SVG (This is because 0 is top, 1000 is bottom, so
         # when we add +200 to move downwards, we need to substract X to move
         # back up)
@@ -89,7 +89,11 @@ class Gfx(object):
                 start = subset_idx * points_per_row
                 end = (1 + subset_idx) * points_per_row
                 # Only points in this row
-                subset = numpy.array([p for p in track.data if start <= p[0] <= end])
+                subset = [start, 0]
+                subset += [p for p in track.data if start <= p[0] <= end]
+                subset += [end, 0]
+
+                print subset
                 if len(subset) > 0:
                     x_subset = subset[:, 0]
                     y_subset = subset[:, 1]
