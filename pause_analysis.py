@@ -32,6 +32,7 @@ def main(wig_files=None):
             track_list.append(pause_gfx.Track(reshaped))
             count += 1
     (maxtab, mintab) = peakdet(y_vals, 20)
+    maxtab[:, 1] *= -1
     track_list.append(pause_gfx.Highlight(maxtab))
 
     g = pause_gfx.Gfx(track_list)

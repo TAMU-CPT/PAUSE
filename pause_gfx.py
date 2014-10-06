@@ -84,18 +84,22 @@ class Gfx(object):
                 # Subset our data
                 start = subset_idx * points_per_row
                 end = (1 + subset_idx) * points_per_row
-                x_subset = track.data[:,0][start:end]
-                y_subset = track.data[:,1][start:end]
-                # Offset the data for Y
-                row_y_offset = self.row_height * subset_idx
-
-                row_y_values = (y_subset * row_y_scaling_factor) + row_y_offset
-                row_x_values = x_subset / row_x_scaling_factor
-
-                reshaped = numpy.column_stack((row_x_values, row_y_values))
-                ##http://stackoverflow.com/a/10016379
-                points = tuple(map(tuple, reshaped))
-                for dataset in track.plot(svg, points):
-                    svg.add(dataset)
+                # Only points in this row
+                subset = numpy.array([p for p in track.data if start <= p[0] <= end])
+                if len(subset) > 0:
+                    x_subset = subset[:, 0]
+                    y_subset = subset[:, 1]
+                    print y_subset
+                    # Offset the data for Y
+                    row_y_offset = self.row_height * subset_idx
+                    # Apply data reshaping
+                    row_y_values = (y_subset * row_y_scaling_factor) + row_y_offset
+                    row_x_values = x_subset / row_x_scaling_factor
+                    # Restack data into [[], []]
+                    reshaped = numpy.column_stack((row_x_values, row_y_values))
+                    ##http://stackoverflow.com/a/10016379
+                    points = tuple(map(tuple, reshaped))
+                    for dataset in track.plot(svg, points):
+                        svg.add(dataset)
 
         return svg.tostring()
