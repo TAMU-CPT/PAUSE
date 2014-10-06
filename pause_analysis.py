@@ -18,22 +18,31 @@ def main(wig_files=None):
     track_list = []
     count = 0
     for wig_file in wig_files:
+        print wig_file
         with open(wig_file) as wig_handle:
             y_vals = numpy.asarray([f[2] for f in
                                     bx.wiggle.Reader(wig_handle)],
                                    dtype=numpy.int)
 
             x_vals = range(len(y_vals))
+            # Only use maxtab as mintab is always zero and basically
+            # useless.
+            (maxtab, mintab) = peakdet(y_vals, 20)
+
+            # Assume datasets are given (+ strand, - strand)
+            # TODO: improve this
             if count % 2 == 0:
                 reshaped = numpy.column_stack((x_vals, y_vals))
             else:
                 reshaped = numpy.column_stack((x_vals, -y_vals))
+                maxtab[:, 1] *= -1
 
-            track_list.append(pause_gfx.Track(reshaped))
+            reshaped = pause_gfx.Filter.downsample(
+                pause_gfx.Filter.minpass(reshaped))
+
+            track_list.append(pause_gfx.Highlight(maxtab))
+            track_list.append(pause_gfx.Coverage(reshaped))
             count += 1
-    (maxtab, mintab) = peakdet(y_vals, 20)
-    maxtab[:, 1] *= -1
-    track_list.append(pause_gfx.Highlight(maxtab))
 
     g = pause_gfx.Gfx(track_list)
     data = g.plot()
