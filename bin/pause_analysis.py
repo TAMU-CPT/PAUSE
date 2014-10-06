@@ -13,30 +13,20 @@ import pysam
 from galaxygetopt.ggo import GalaxyGetOpt as GGO
 
 
-def main(starts=None, bam_file=None):
-    if starts is None:
-        starts = []
+def get_data(wig_handle):
+    data = []
+    for row in bx.wiggle.Reader(wig_handle):
+        data.append((row[1], row[2]))
 
-    count = 0
+    reshaped = numpy.array(data, dtype=numpy.int)
+    return reshaped
 
-    # Starts are handled separately from coverage
-    results = []
-    for wig_handle in starts:
-        y_vals = numpy.asarray([f[2] for f in
-                                bx.wiggle.Reader(wig_handle)],
-                               dtype=numpy.int)
-        x_vals = range(len(y_vals))
-        data = numpy.column_stack((x_vals, y_vals))
-        # Only use maxtab as mintab is always zero and basically
-        # useless.
-        (maxtab, mintab) = peakdet(y_vals, 20)
-        # Assume datasets are given (+ strand, - strand)
-        if count % 2 == 0:
-            pass
-        else:
-            maxtab[:, 1] *= -1
-        results.append(maxtab)
-    return results
+
+def main(starts_f=None, starts_r=None, bam_file=None, **kwd):
+    data_f = get_data(starts_f.name)
+    data_r = get_data(starts_r.name)
+
+    return (data_f, data_r)
 
 
 def peakdet(v, delta, x=None):
@@ -116,8 +106,10 @@ def peakdet(v, delta, x=None):
 if __name__ == "__main__":
     opts = GGO(
         options=[
-            ['starts', 'Start files',
-             {'multiple': True, 'validate': 'File/Input'}],
+            ['starts_f', '+ strand start wig data',
+             {'required': True, 'validate': 'File/Input'}],
+            ['starts_r', '- strand start wig data',
+             {'required': True, 'validate': 'File/Input'}],
             ['bam_file', 'Bam File',
              {'required': True, 'validate': 'File/Input'}],
         ],
@@ -143,6 +135,17 @@ if __name__ == "__main__":
                     'data_format': 'text/plain',
                     'default_format': 'TXT',
                 }
+            ],
+            [
+                'pause_report',
+                'PAUSE Report',
+                {
+                    'validate': 'File/Output',
+                    'required': True,
+                    'default': 'pause_report',
+                    'data_format': 'text/plain',
+                    'default_format': 'TXT',
+                }
             ]
         ],
         defaults={
@@ -155,7 +158,7 @@ if __name__ == "__main__":
         doc=__doc__
     )
     options = opts.params()
-    (f, r) = main(starts=options['starts'])
+    (f, r) = main(**options)
 
     if not os.path.exists(options['bam_file'].name + ".bai"):
         pysam.index(options['bam_file'].name)

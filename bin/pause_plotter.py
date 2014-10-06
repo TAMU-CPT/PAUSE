@@ -3,7 +3,7 @@
 """
 import bx.wiggle
 import numpy
-import pause
+import cpt_pause
 from galaxygetopt.ggo import GalaxyGetOpt as GGO
 
 
