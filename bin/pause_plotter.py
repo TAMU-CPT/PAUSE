@@ -3,7 +3,7 @@
 """
 import bx.wiggle
 import numpy
-import pause_gfx
+import pause
 from galaxygetopt.ggo import GalaxyGetOpt as GGO
 
 
@@ -35,10 +35,9 @@ def main(coverage=None, starts=None, highlights=None):
         # Fetch data
         reshaped = get_data(wig_handle, count)
         # Downsample
-        reshaped = pause_gfx.Filter.downsample(reshaped,
-                                               sampling_interval=10)
+        reshaped = pause.Filter.downsample(reshaped, sampling_interval=10)
         # Append
-        track_list.append(pause_gfx.Coverage(reshaped, opacity=0.5))
+        track_list.append(pause.Coverage(reshaped, opacity=0.5))
         count += 1
 
     # Starts are handled separately from coverage
@@ -46,21 +45,19 @@ def main(coverage=None, starts=None, highlights=None):
         # Fetch data
         reshaped = get_data(wig_handle, count)
         # Pass filter, then remove repeated y values
-        reshaped = pause_gfx.Filter.repeat_reduction(
-            pause_gfx.Filter.minpass(reshaped, min_value=2))
-        track_list.append(pause_gfx.Coverage(reshaped, line_color='blue'))
+        reshaped = pause.Filter.repeat_reduction(
+            pause.Filter.minpass(reshaped, min_value=2))
+        track_list.append(pause.Coverage(reshaped, line_color='blue'))
         count += 1
 
     for wig_handle in highlights:
         # Fetch data
         reshaped = get_data(wig_handle, count)
-        track_list.append(pause_gfx.Highlight(reshaped))
+        track_list.append(pause.Highlight(reshaped))
         count += 1
 
-    g = pause_gfx.Gfx(track_list)
-    data = g.plot()
-    with open('out.svg', 'w') as handle:
-        handle.write(data)
+    g = pause.Gfx(track_list)
+    return g.plot()
 
 
 if __name__ == "__main__":
@@ -74,6 +71,17 @@ if __name__ == "__main__":
              {'multiple': True, 'validate': 'File/Input'}],
         ],
         outputs=[
+            [
+                'pause_plot',
+                'PAUSE Plot',
+                {
+                    'validate': 'File/Output',
+                    'required': True,
+                    'default': 'pause_plot',
+                    'data_format': 'text/plain',
+                    'default_format': 'TXT',
+                }
+            ]
         ],
         defaults={
             'appid': 'edu.tamu.cpt.pause2.plotter',
@@ -85,6 +93,9 @@ if __name__ == "__main__":
         doc=__doc__
     )
     options = opts.params()
-    main(coverage=options['coverage'],
-         starts=options['starts'],
-         highlights=options['highlights'])
+    output = main(coverage=options['coverage'], starts=options['starts'],
+                  highlights=options['highlights'])
+
+    from galaxygetopt.outputfiles import OutputFiles
+    off = OutputFiles(name='pause_plot', GGO=opts)
+    off.CRR(data=output)

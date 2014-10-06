@@ -1,15 +1,22 @@
+INPUT=t/angus.bam
 
-angus.starts.f.wig:
-	python pause_starts_to_wiggle.py angus.bam
+wig.starts.f.txt:
+	pause_starts_to_wiggle.py --bam_file $(INPUT)
 
-angus.coverage.f.wig:
-	python pause_coverage_to_wiggle.py angus.bam
+wig.coverage.f.txt:
+	pause_coverage_to_wiggle.py --bam_file $(INPUT)
 
-angus.f.highlights.wig: angus.starts.f.wig
-	python pause_analysis.py --starts angus.starts.f.wig --starts angus.starts.r.wig --bam_file angus.bam
+wig.highlights.f.txt: wig.starts.f.txt
+	pause_analysis.py --starts wig.starts.f.txt --starts wig.starts.f.txt --bam_file $(INPUT)
 
-out.svg: angus.f.highlights.wig angus.coverage.f.wig angus.starts.f.wig
-	python pause_plotter.py --coverage angus.coverage.f.wig --coverage angus.coverage.r.wig --starts angus.starts.f.wig --starts angus.starts.r.wig  --highlights angus.f.highlights.wig --highlights angus.r.highlights.wig ; scp out.svg esr@cpt:/var/www/out.svg 
+out.svg: wig.highlights.f.txt wig.coverage.f.txt wig.starts.f.txt
+	pause_plotter.py --coverage wig.coverage.f.txt --coverage wig.coverage.r.txt --starts wig.starts.f.txt --starts wig.starts.r.txt  --highlights wig.pause.f.txt --highlights wig.pause.r.txt
+	mv pause_plot.txt out.svg
+
+.PHONY: send clean
+
+send: out.svg
+	scp out.svg esr@cpt:/var/www/out.svg
 
 clean:
-	@rm -f *.wig out.svg
+	@rm -f wig*.txt out.svg

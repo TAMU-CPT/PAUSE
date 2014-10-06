@@ -6,42 +6,16 @@ Usage:
 
 """
 import os
-import sys
-from optparse import OptionParser
-from contextlib import contextmanager, closing
-
+from contextlib import contextmanager
 import pysam
-
-
-def main(bam_file, chrom='all', start=0, end=None,
-         outfile=None):
-    if outfile is None:
-        outfile = "%s.bigwig" % os.path.splitext(bam_file)[0]
-    if start > 0:
-        start = int(start) - 1
-    if end is not None:
-        end = int(end)
-    regions = [(chrom, start, end)]
-    if os.path.abspath(bam_file) == os.path.abspath(outfile):
-        sys.stderr.write("Bad arguments, input and output files are the same.\n")
-        sys.exit(1)
-    if not (os.path.exists(outfile) and os.path.getsize(outfile) > 0):
-        # Use a temp file to avoid any possiblity of not having write
-        # permission
-        wigfile_f = "%s.starts.f.wig" % os.path.splitext(outfile)[0]
-        wigfile_r = "%s.starts.r.wig" % os.path.splitext(outfile)[0]
-        out_handle_f = open(wigfile_f, "w")
-        out_handle_r = open(wigfile_r, "w")
-
-        with closing(out_handle_f) and closing(out_handle_r):
-            write_bam_track(bam_file, regions, out_handle_f, out_handle_r)
+from galaxygetopt.ggo import GalaxyGetOpt as GGO
 
 
 @contextmanager
 def indexed_bam(bam_file):
-    if not os.path.exists(bam_file + ".bai"):
+    if not os.path.exists(bam_file.name + ".bai"):
         pysam.index(bam_file)
-    sam_reader = pysam.Samfile(bam_file, "rb")
+    sam_reader = pysam.Samfile(bam_file.name, "rb")
     yield sam_reader
     sam_reader.close()
 
@@ -52,11 +26,12 @@ def gen_header(bam_file, suffix):
     return "track type=wiggle_0 %s visibility=full\n" % track_name
 
 
-def write_bam_track(bam_file, regions, out_handle_f, out_handle_r):
+def start_data(bam_file):
+    wig_f = ""
+    wig_r = ""
     with indexed_bam(bam_file) as work_bam:
         sizes = zip(work_bam.references, work_bam.lengths)
-        if len(regions) == 1 and regions[0][0] == "all":
-            regions = [(name, 0, length) for name, length in sizes]
+        regions = [(name, 0, length) for name, length in sizes]
         for chrom, start, end in regions:
             if end is None and chrom in work_bam.references:
                 end = work_bam.lengths[work_bam.references.index(chrom)]
@@ -88,32 +63,67 @@ def write_bam_track(bam_file, regions, out_handle_f, out_handle_r):
                     else:
                         start_map_f[rstart] = 1
             # Write to file
-            out_handle_f.write(gen_header(bam_file, 'f'))
-            out_handle_f.write("variableStep chrom=%s\n" % chrom)
+            wig_f += gen_header(bam_file.name, 'f')
+            wig_f += "variableStep chrom=%s\n" % chrom
             for i in range(start + 1, end + 1):
                 if i in start_map_f:
-                    out_handle_f.write("%s %.1f\n" % (i, start_map_f[i]))
+                    wig_f += "%s %.1f\n" % (i, start_map_f[i])
                 else:
-                    out_handle_f.write("%s 0.0\n" % i)
-            out_handle_r.write(gen_header(bam_file, 'r'))
-            out_handle_r.write("variableStep chrom=%s\n" % chrom)
+                    wig_f += "%s 0.0\n" % i
+            wig_r += gen_header(bam_file.name, 'r')
+            wig_r += "variableStep chrom=%s\n" % chrom
             for i in range(start + 1, end + 1):
                 if i in start_map_r:
-                    out_handle_r.write("%s %.1f\n" % (i, start_map_r[i]))
+                    wig_r += "%s %.1f\n" % (i, start_map_r[i])
                 else:
-                    out_handle_r.write("%s 0.0\n" % i)
+                    wig_r += "%s 0.0\n" % i
+    return (wig_f, wig_r)
 
 
 if __name__ == "__main__":
-    parser = OptionParser()
-    parser.add_option("-o", "--outfile", dest="outfile")
-    (options, args) = parser.parse_args()
-    if len(args) != 1:
-        print "Incorrect arguments"
-        print __doc__
-        sys.exit()
-    kwargs = dict(
-        outfile=options.outfile,
-        chrom='all',
-        start=0)
-    main(*args, **kwargs)
+    opts = GGO(
+        options=[
+            ['bam_file', 'Bam File',
+             {'required': True, 'validate': 'File/Input'}],
+        ],
+        outputs=[
+            [
+                'wig_f',
+                '+ strand wig data',
+                {
+                    'validate': 'File/Output',
+                    'required': True,
+                    'default': 'wig.starts.f',
+                    'data_format': 'text/plain',
+                    'default_format': 'TXT',
+                }
+            ],
+            [
+                'wig_r',
+                '- strand wig data',
+                {
+                    'validate': 'File/Output',
+                    'required': True,
+                    'default': 'wig.starts.r',
+                    'data_format': 'text/plain',
+                    'default_format': 'TXT',
+                }
+            ]
+        ],
+        defaults={
+            'appid': 'edu.tamu.cpt.pause2.starts_to_wiggle',
+            'appname': 'PAUSE2 BAM to Starts Wiggle',
+            'appvers': '0.1',
+            'appdesc': 'create wiggle file from starts information',
+        },
+        tests=[],
+        doc=__doc__
+    )
+    options = opts.params()
+    (data_f, data_r) = start_data(options['bam_file'])
+
+    from galaxygetopt.outputfiles import OutputFiles
+    off = OutputFiles(name='wig_f', GGO=opts)
+    off.CRR(data=data_f)
+    ofr = OutputFiles(name='wig_r', GGO=opts)
+    ofr.CRR(data=data_r)

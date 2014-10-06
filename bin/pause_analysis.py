@@ -122,6 +122,28 @@ if __name__ == "__main__":
              {'required': True, 'validate': 'File/Input'}],
         ],
         outputs=[
+            [
+                'wig_f',
+                '+ strand PAUSE wig results',
+                {
+                    'validate': 'File/Output',
+                    'required': True,
+                    'default': 'wig.pause.f',
+                    'data_format': 'text/plain',
+                    'default_format': 'TXT',
+                }
+            ],
+            [
+                'wig_r',
+                '- strand PAUSE wig results',
+                {
+                    'validate': 'File/Output',
+                    'required': True,
+                    'default': 'wig.pause.r',
+                    'data_format': 'text/plain',
+                    'default_format': 'TXT',
+                }
+            ]
         ],
         defaults={
             'appid': 'edu.tamu.cpt.pause2.analysis',
@@ -143,13 +165,16 @@ if __name__ == "__main__":
     header = """track type=wiggle_0 name=%s visibility=full
 variableStep chrom=%s\n"""
 
-    with open('angus.f.highlights.wig', 'w') as f_handle:
-        f_handle.write(header % ('highlights_f', regions[0][0]))
-        for row in f:
-            f_handle.write(' '.join(map(str, row)) + "\n")
+    data_f = header % ('highlights_f', regions[0][0])
+    for row in f:
+        data_f += ' '.join(map(str, row)) + "\n"
 
-    with open('angus.r.highlights.wig', 'w') as r_handle:
-        r_handle.write(header % ('highlights_r', regions[0][0]))
-        for row in r:
-            r_handle.write(' '.join(map(str, row)) + "\n")
+    data_r = header % ('highlights_r', regions[0][0])
+    for row in r:
+        data_r += ' '.join(map(str, row)) + "\n"
 
+    from galaxygetopt.outputfiles import OutputFiles
+    off = OutputFiles(name='wig_f', GGO=opts)
+    off.CRR(data=data_f)
+    ofr = OutputFiles(name='wig_r', GGO=opts)
+    ofr.CRR(data=data_r)
