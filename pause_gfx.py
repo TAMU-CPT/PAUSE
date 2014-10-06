@@ -6,6 +6,8 @@ Library only (for now)
 
 import svgwrite
 import numpy
+import math
+import scipy
 
 class Track(object):
 
@@ -23,28 +25,34 @@ class Track(object):
 
 class Coverage(Track):
 
-    def __init__(self, data, line_width=1, line_color='black', fill='grey'):
+    def __init__(self, data, line_width=1, line_color='black', fill='grey',
+                 opacity=1.0):
         Track.__init__(self, data)
         self.style = {
             'line_width': line_width,
             'line_color': line_color,
-            'fill': fill
+            'fill': fill,
+            'opacity': opacity,
         }
 
     def plot(self, svg, points):
         return [svg.polygon(points, stroke_width=self.style['line_width'],
                             stroke=self.style['line_color'],
-                            fill=self.style['fill'])]
+                            fill=self.style['fill'],
+                            opacity=self.style['opacity'],
+                            )]
 
 
 class Highlight(Track):
 
-    def __init__(self, data, line_width=1, line_color='red', fill='none'):
+    def __init__(self, data, line_width=1, line_color='red', fill='none',
+                 opacity=1.0):
         Track.__init__(self, data)
         self.style = {
             'line_width': line_width,
             'line_color': line_color,
-            'fill': fill
+            'fill': fill,
+            'opacity': opacity,
         }
 
     def plot(self, svg, points):
@@ -53,7 +61,9 @@ class Highlight(Track):
             data.append(svg.circle(center=point, r=15,
                                    stroke_width=self.style['line_width'],
                                    stroke=self.style['line_color'],
-                                   fill=self.style['fill']))
+                                   fill=self.style['fill'],
+                                   opacity=self.style['opacity'],
+                                   ))
         return data
 
 
@@ -84,6 +94,35 @@ class Gfx(object):
                                      "%spx" % ((number_of_rows + 2) *
                                                self.row_height)))
 
+        for subset_idx in range(number_of_rows):
+            row_y_offset = ((self.row_sep + self.row_height) * subset_idx) \
+                + (self.row_height/2)
+            row_y_offset_min = row_y_offset - (self.row_height / 2)
+            row_y_offset_max = row_y_offset + (self.row_height / 2)
+            svg.add(svg.rect(
+                insert=(0, row_y_offset_min),
+                size=(width, self.row_height),
+                stroke_width=1,
+                stroke='gray',
+                opacity=0.45,
+                fill='none',
+            ))
+
+            for kb_mark in range(0, scale):
+                x_offset = kb_mark * 1000 * row_x_scaling_factor
+                svg.add(svg.line(
+                    start=(x_offset, row_y_offset_min),
+                    end=(x_offset, row_y_offset_max),
+                    stroke_width=1,
+                    stroke='gray',
+                    opacity=0.45,
+                ))
+
+                dist = kb_mark + (subset_idx * scale)
+                print dist
+                svg.add(svg.text('%s kb' % dist,
+                                 insert=(x_offset, row_y_offset_max + 18)))
+
         for track in self.tracks:
             for subset_idx in range(number_of_rows):
                 # Subset our data
@@ -112,27 +151,6 @@ class Gfx(object):
                     points = tuple(map(tuple, reshaped))
                     for dataset in track.plot(svg, points):
                         svg.add(dataset)
-
-        for subset_idx in range(number_of_rows):
-            row_y_offset = ((self.row_sep + self.row_height) * subset_idx) + (self.row_height/2)
-            row_y_offset_min = row_y_offset - (self.row_height / 2)
-            row_y_offset_max = row_y_offset + (self.row_height / 2)
-            svg.add(svg.rect(
-                insert=(0, row_y_offset_min),
-                size=(width, self.row_height),
-                stroke_width=1,
-                stroke='black',
-                fill='none',
-            ))
-
-            for kb_mark in range(1, scale):
-                x_offset = kb_mark * 1000 * row_x_scaling_factor
-                svg.add(svg.line(
-                    start=(x_offset, row_y_offset_min),
-                    end=(x_offset, row_y_offset_max),
-                    stroke_width=1,
-                    stroke='black',
-                ))
 
         return svg.tostring()
 
@@ -187,10 +205,23 @@ class Filter(object):
         """
             Downsample data at a specified interval
         """
-        result = []
-        for i in range(0, len(data), sampling_interval):
-            result.append(data[i])
-        return numpy.array(result)
+        x_vals = data[:, 0]
+        y_vals = data[:, 1]
+
+        pad_size = math.ceil(float(y_vals.size) / sampling_interval) * \
+            sampling_interval - y_vals.size
+        padded = numpy.append(y_vals, numpy.zeros(pad_size) * numpy.NaN)
+        y_vals_fixed = numpy.nanmean(padded.reshape(-1, sampling_interval),
+                                     axis=1)
+
+        pad_size = math.ceil(float(x_vals.size) / sampling_interval) * \
+            sampling_interval - x_vals.size
+        padded = numpy.append(x_vals, numpy.zeros(pad_size) * numpy.NaN)
+        x_vals_fixed = numpy.nanmean(padded.reshape(-1, sampling_interval),
+                                     axis=1)
+
+        result = numpy.column_stack((x_vals_fixed, y_vals_fixed))
+        return numpy.array(result, dtype=numpy.int)
 
     @classmethod
     def minpass(cls, data, min_value=5):
@@ -200,4 +231,4 @@ class Filter(object):
 
             TODO: more efficient implementation
         """
-        return numpy.where(data >= min_value, data, 0)
+        return numpy.where(abs(data) >= min_value, data, 0)

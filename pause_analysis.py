@@ -35,7 +35,9 @@ def main(coverage=None, starts=None):
 
         #reshaped = pause_gfx.Filter.repeat_reduction(
             #pause_gfx.Filter.minpass(reshaped, min_value=2))
-        track_list.append(pause_gfx.Coverage(reshaped))
+        reshaped = pause_gfx.Filter.downsample(reshaped,
+                                               sampling_interval=10)
+        track_list.append(pause_gfx.Coverage(reshaped, opacity=0.5))
         count += 1
 
     # Starts are handled separately from coverage
@@ -61,7 +63,7 @@ def main(coverage=None, starts=None):
             pause_gfx.Filter.minpass(reshaped, min_value=2))
 
         track_list.append(pause_gfx.Highlight(maxtab))
-        track_list.append(pause_gfx.Coverage(reshaped))
+        track_list.append(pause_gfx.Coverage(reshaped, line_color='blue'))
         count += 1
 
     g = pause_gfx.Gfx(track_list)
@@ -145,11 +147,6 @@ def peakdet(v, delta, x=None):
 
 
 if __name__ == "__main__":
-    #if len(sys.argv) <= 1:
-        #print "Incorrect arguments"
-        #print __doc__
-        #sys.exit()
-    #kwargs = dict()
     opts = GGO(
         options=[
             ['coverage', 'Coverage files',
