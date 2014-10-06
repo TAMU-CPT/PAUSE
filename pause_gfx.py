@@ -79,8 +79,7 @@ class Gfx(object):
                                      "%spx" % (number_of_rows *
                                                self.row_height)))
 
-        for track in [track for track in self.tracks
-                      if isinstance(track, Track)]:
+        for track in self.tracks:
             for subset_idx in range(number_of_rows):
                 # Subset our data
                 start = subset_idx * points_per_row
@@ -98,27 +97,5 @@ class Gfx(object):
                 points = tuple(map(tuple, reshaped))
                 for dataset in track.plot(svg, points):
                     svg.add(dataset)
-
-        #for highlight in [track for track in self.tracks
-                          #if isinstance(track, Highlight)]:
-            #for subset_idx in range(number_of_rows):
-                #start = subset_idx * points_per_row
-                #end = (1 + subset_idx) * points_per_row
-                #points = numpy.array([p for p in highlight.data if start <= p[0] <= end])
-                #if len(points) > 0:
-                    ## Offset the data for Y
-                    #row_y_offset = self.row_height * subset_idx
-
-                    #row_x_values = (-points[:, 1] * row_y_scaling_factor) + row_y_offset
-                    #row_y_values = points[:, 0] / row_x_scaling_factor
-
-                    #reshaped = numpy.column_stack((row_x_values, row_y_values))
-                    ###http://stackoverflow.com/a/10016379
-                    #points = tuple(map(tuple, reshaped))
-                    #for point in points:
-                        #svg.add(svg.circle(center=point, r=15,
-                                           #stroke_width=track.style['line_width'],
-                                           #stroke=track.style['line_color'],
-                                           #fill=track.style['fill']))
 
         return svg.tostring()
