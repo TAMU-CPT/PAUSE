@@ -76,28 +76,28 @@ def write_bam_track(bam_file, regions, out_handle_f, out_handle_r):
                 # start is  13395
                 # end is 13537
                 if col.is_reverse:
-                    start = col.aend
-                    if start in start_map_r:
-                        start_map_r[start] += 1
+                    rstart = col.aend
+                    if rstart in start_map_r:
+                        start_map_r[rstart] += 1
                     else:
-                        start_map_r[start] = 1
+                        start_map_r[rstart] = 1
                 else:
-                    start = col.pos + 1
-                    if start in start_map_f:
-                        start_map_f[start] += 1
+                    rstart = col.pos + 1
+                    if rstart in start_map_f:
+                        start_map_f[rstart] += 1
                     else:
-                        start_map_f[start] = 1
+                        start_map_f[rstart] = 1
             # Write to file
             out_handle_f.write(gen_header(bam_file, 'f'))
             out_handle_f.write("variableStep chrom=%s\n" % chrom)
-            for i in range(start, end):
+            for i in range(start + 1, end + 1):
                 if i in start_map_f:
                     out_handle_f.write("%s %.1f\n" % (i, start_map_f[i]))
                 else:
                     out_handle_f.write("%s 0.0\n" % i)
             out_handle_r.write(gen_header(bam_file, 'r'))
             out_handle_r.write("variableStep chrom=%s\n" % chrom)
-            for i in range(start, end):
+            for i in range(start + 1, end + 1):
                 if i in start_map_r:
                     out_handle_r.write("%s %.1f\n" % (i, start_map_r[i]))
                 else:
