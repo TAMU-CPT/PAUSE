@@ -6,13 +6,13 @@ Setup script for PAUSE2
 from setuptools import setup
 
 
-setup(name='pause',
+setup(name='cpt-pause',
       version='0.1.0',
       description='Pileup Analysis Using Starts and Ends',
       author='Eric Rasche',
       author_email='rasche.eric@yandex.ru',
       url='https://cpt.tamu.edu/gitlab/cpt/pause2/',
-      packages=['pause'],
+      packages=['cpt-pause'],
       license='GPL3',
       classifiers=[
           'Development Status :: 3 - Alpha',
