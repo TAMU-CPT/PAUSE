@@ -200,10 +200,4 @@ class Filter(object):
 
             TODO: more efficient implementation
         """
-        fixed = []
-        for row in data:
-            if abs(row[1]) >= min_value:
-                fixed.append(row)
-            else:
-                fixed.append([row[0], 0])
-        return numpy.array(fixed)
+        return numpy.where(data >= min_value, data, 0)

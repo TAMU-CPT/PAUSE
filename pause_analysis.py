@@ -9,40 +9,60 @@ import sys
 import bx.wiggle
 import numpy
 import pause_gfx
+from galaxygetopt.ggo import GalaxyGetOpt as GGO
 
 
-def main(wig_files=None):
-    if wig_files is None:
-        wig_files = []
+def main(coverage=None, starts=None):
+    if coverage is None:
+        coverage = []
+    if starts is None:
+        starts = []
 
     track_list = []
     count = 0
-    for wig_file in wig_files:
-        print wig_file
-        with open(wig_file) as wig_handle:
-            y_vals = numpy.asarray([f[2] for f in
-                                    bx.wiggle.Reader(wig_handle)],
-                                   dtype=numpy.int)
 
-            x_vals = range(len(y_vals))
-            # Only use maxtab as mintab is always zero and basically
-            # useless.
-            (maxtab, mintab) = peakdet(y_vals, 20)
+    # Coverage is handled separately and "just for looks"
+    for wig_handle in coverage:
+        y_vals = numpy.asarray([f[2] for f in
+                                bx.wiggle.Reader(wig_handle)],
+                               dtype=numpy.int)
 
-            # Assume datasets are given (+ strand, - strand)
-            # TODO: improve this
-            if count % 2 == 0:
-                reshaped = numpy.column_stack((x_vals, y_vals))
-            else:
-                reshaped = numpy.column_stack((x_vals, -y_vals))
-                maxtab[:, 1] *= -1
+        x_vals = range(len(y_vals))
+        if count % 2 == 0:
+            reshaped = numpy.column_stack((x_vals, y_vals))
+        else:
+            reshaped = numpy.column_stack((x_vals, -y_vals))
 
-            reshaped = pause_gfx.Filter.repeat_reduction(
-                pause_gfx.Filter.minpass(reshaped, min_value=2))
+        #reshaped = pause_gfx.Filter.repeat_reduction(
+            #pause_gfx.Filter.minpass(reshaped, min_value=2))
+        track_list.append(pause_gfx.Coverage(reshaped))
+        count += 1
 
-            track_list.append(pause_gfx.Highlight(maxtab))
-            track_list.append(pause_gfx.Coverage(reshaped))
-            count += 1
+    # Starts are handled separately from coverage
+    for wig_handle in starts:
+        y_vals = numpy.asarray([f[2] for f in
+                                bx.wiggle.Reader(wig_handle)],
+                               dtype=numpy.int)
+
+        x_vals = range(len(y_vals))
+        # Only use maxtab as mintab is always zero and basically
+        # useless.
+        (maxtab, mintab) = peakdet(y_vals, 20)
+
+        # Assume datasets are given (+ strand, - strand)
+        # TODO: improve this
+        if count % 2 == 0:
+            reshaped = numpy.column_stack((x_vals, y_vals))
+        else:
+            reshaped = numpy.column_stack((x_vals, -y_vals))
+            maxtab[:, 1] *= -1
+
+        reshaped = pause_gfx.Filter.repeat_reduction(
+            pause_gfx.Filter.minpass(reshaped, min_value=2))
+
+        track_list.append(pause_gfx.Highlight(maxtab))
+        track_list.append(pause_gfx.Coverage(reshaped))
+        count += 1
 
     g = pause_gfx.Gfx(track_list)
     data = g.plot()
@@ -125,9 +145,31 @@ def peakdet(v, delta, x=None):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) <= 1:
-        print "Incorrect arguments"
-        print __doc__
-        sys.exit()
-    kwargs = dict()
-    main(wig_files=sys.argv[1:])
+    #if len(sys.argv) <= 1:
+        #print "Incorrect arguments"
+        #print __doc__
+        #sys.exit()
+    #kwargs = dict()
+    opts = GGO(
+        options=[
+            ['coverage', 'Coverage files',
+             {'multiple': True, 'validate': 'File/Input'}],
+            ['starts', 'Start files',
+             {'multiple': True, 'validate': 'File/Input'}],
+        ],
+        outputs=[
+        ],
+        defaults={
+            'appid': 'edu.tamu.cpt.pause2.plotter',
+            'appname': 'PAUSE2',
+            'appvers': '0.3',
+            'appdesc': 'run PAUSE analysis and plotting',
+        },
+        tests=[],
+        doc=__doc__
+    )
+    options = opts.params()
+    main(coverage=options['coverage'],
+         starts=options['starts'])
+
+
