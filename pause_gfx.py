@@ -119,7 +119,6 @@ class Gfx(object):
                 ))
 
                 dist = kb_mark + (subset_idx * scale)
-                print dist
                 svg.add(svg.text('%s kb' % dist,
                                  insert=(x_offset, row_y_offset_max + 18)))
 

@@ -5,71 +5,38 @@ Usage:
     bam_to_wiggle.py <BAM file>
 
 """
+import os
 import sys
 import bx.wiggle
 import numpy
-import pause_gfx
+import pysam
 from galaxygetopt.ggo import GalaxyGetOpt as GGO
 
 
-def main(coverage=None, starts=None):
-    if coverage is None:
-        coverage = []
+def main(starts=None, bam_file=None):
     if starts is None:
         starts = []
 
-    track_list = []
     count = 0
 
-    # Coverage is handled separately and "just for looks"
-    for wig_handle in coverage:
-        y_vals = numpy.asarray([f[2] for f in
-                                bx.wiggle.Reader(wig_handle)],
-                               dtype=numpy.int)
-
-        x_vals = range(len(y_vals))
-        if count % 2 == 0:
-            reshaped = numpy.column_stack((x_vals, y_vals))
-        else:
-            reshaped = numpy.column_stack((x_vals, -y_vals))
-
-        #reshaped = pause_gfx.Filter.repeat_reduction(
-            #pause_gfx.Filter.minpass(reshaped, min_value=2))
-        reshaped = pause_gfx.Filter.downsample(reshaped,
-                                               sampling_interval=10)
-        track_list.append(pause_gfx.Coverage(reshaped, opacity=0.5))
-        count += 1
-
     # Starts are handled separately from coverage
+    results = []
     for wig_handle in starts:
         y_vals = numpy.asarray([f[2] for f in
                                 bx.wiggle.Reader(wig_handle)],
                                dtype=numpy.int)
-
         x_vals = range(len(y_vals))
+        data = numpy.column_stack((x_vals, y_vals))
         # Only use maxtab as mintab is always zero and basically
         # useless.
         (maxtab, mintab) = peakdet(y_vals, 20)
-
         # Assume datasets are given (+ strand, - strand)
-        # TODO: improve this
         if count % 2 == 0:
-            reshaped = numpy.column_stack((x_vals, y_vals))
+            pass
         else:
-            reshaped = numpy.column_stack((x_vals, -y_vals))
             maxtab[:, 1] *= -1
-
-        reshaped = pause_gfx.Filter.repeat_reduction(
-            pause_gfx.Filter.minpass(reshaped, min_value=2))
-
-        track_list.append(pause_gfx.Highlight(maxtab))
-        track_list.append(pause_gfx.Coverage(reshaped, line_color='blue'))
-        count += 1
-
-    g = pause_gfx.Gfx(track_list)
-    data = g.plot()
-    with open('out.svg', 'w') as handle:
-        handle.write(data)
+        results.append(maxtab)
+    return results
 
 
 def peakdet(v, delta, x=None):
@@ -149,24 +116,40 @@ def peakdet(v, delta, x=None):
 if __name__ == "__main__":
     opts = GGO(
         options=[
-            ['coverage', 'Coverage files',
-             {'multiple': True, 'validate': 'File/Input'}],
             ['starts', 'Start files',
              {'multiple': True, 'validate': 'File/Input'}],
+            ['bam_file', 'Bam File',
+             {'required': True, 'validate': 'File/Input'}],
         ],
         outputs=[
         ],
         defaults={
-            'appid': 'edu.tamu.cpt.pause2.plotter',
-            'appname': 'PAUSE2',
-            'appvers': '0.3',
-            'appdesc': 'run PAUSE analysis and plotting',
+            'appid': 'edu.tamu.cpt.pause2.analysis',
+            'appname': 'PAUSE2 Analaysis',
+            'appvers': '0.1',
+            'appdesc': 'run PAUSE analysis',
         },
         tests=[],
         doc=__doc__
     )
     options = opts.params()
-    main(coverage=options['coverage'],
-         starts=options['starts'])
+    (f, r) = main(starts=options['starts'])
 
+    if not os.path.exists(options['bam_file'].name + ".bai"):
+        pysam.index(options['bam_file'].name)
+    sam_reader = pysam.Samfile(options['bam_file'].name, "rb")
+    sizes = zip(sam_reader.references, sam_reader.lengths)
+    regions = [(name, 0, length) for name, length in sizes]
+    header = """track type=wiggle_0 name=%s visibility=full
+variableStep chrom=%s\n"""
+
+    with open('angus.f.highlights.wig', 'w') as f_handle:
+        f_handle.write(header % ('highlights_f', regions[0][0]))
+        for row in f:
+            f_handle.write(' '.join(map(str, row)) + "\n")
+
+    with open('angus.r.highlights.wig', 'w') as r_handle:
+        r_handle.write(header % ('highlights_r', regions[0][0]))
+        for row in r:
+            r_handle.write(' '.join(map(str, row)) + "\n")
 
