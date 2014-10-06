@@ -37,8 +37,8 @@ def main(wig_files=None):
                 reshaped = numpy.column_stack((x_vals, -y_vals))
                 maxtab[:, 1] *= -1
 
-            reshaped = pause_gfx.Filter.downsample(
-                pause_gfx.Filter.minpass(reshaped))
+            reshaped = pause_gfx.Filter.repeat_reduction(
+                pause_gfx.Filter.minpass(reshaped, min_value=2))
 
             track_list.append(pause_gfx.Highlight(maxtab))
             track_list.append(pause_gfx.Coverage(reshaped))
