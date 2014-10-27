@@ -35,9 +35,9 @@ def main(coverage=None, starts=None, highlights=None):
         # Fetch data
         reshaped = get_data(wig_handle, count)
         # Downsample
-        reshaped = pause.Filter.downsample(reshaped, sampling_interval=10)
+        reshaped = cpt_pause.Filter.downsample(reshaped, sampling_interval=10)
         # Append
-        track_list.append(pause.Coverage(reshaped, opacity=0.5))
+        track_list.append(cpt_pause.Coverage(reshaped, opacity=0.5))
         count += 1
 
     # Starts are handled separately from coverage
@@ -45,18 +45,18 @@ def main(coverage=None, starts=None, highlights=None):
         # Fetch data
         reshaped = get_data(wig_handle, count)
         # Pass filter, then remove repeated y values
-        reshaped = pause.Filter.repeat_reduction(
-            pause.Filter.minpass(reshaped, min_value=2))
-        track_list.append(pause.Coverage(reshaped, line_color='blue'))
+        reshaped = cpt_pause.Filter.repeat_reduction(
+            cpt_pause.Filter.minpass(reshaped, min_value=2))
+        track_list.append(cpt_pause.Coverage(reshaped, line_color='blue'))
         count += 1
 
     for wig_handle in highlights:
         # Fetch data
         reshaped = get_data(wig_handle, count)
-        track_list.append(pause.Highlight(reshaped))
+        track_list.append(cpt_pause.Highlight(reshaped))
         count += 1
 
-    g = pause.Gfx(track_list)
+    g = cpt_pause.Gfx(track_list)
     return g.plot()
 
 

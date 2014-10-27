@@ -23,10 +23,11 @@ def get_data(wig_handle):
 
 
 def main(starts_f=None, starts_r=None, bam_file=None, **kwd):
-    data_f = get_data(starts_f.name)
-    data_r = get_data(starts_r.name)
-
-    return (data_f, data_r)
+    data_f = get_data(starts_f)
+    data_r = get_data(starts_r)
+    (max_f, min_f) = peakdet(data_f[:, 1], 10)
+    (max_r, min_r) = peakdet(data_r[:, 1], 10)
+    return (max_f, max_r)
 
 
 def peakdet(v, delta, x=None):

@@ -7,7 +7,6 @@ Library only (for now)
 import svgwrite
 import numpy
 import math
-import scipy
 
 class Track(object):
 

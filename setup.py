@@ -12,7 +12,7 @@ setup(name='cpt-pause',
       author='Eric Rasche',
       author_email='rasche.eric@yandex.ru',
       url='https://cpt.tamu.edu/gitlab/cpt/pause2/',
-      packages=['cpt-pause'],
+      packages=['cpt_pause'],
       license='GPL3',
       classifiers=[
           'Development Status :: 3 - Alpha',
