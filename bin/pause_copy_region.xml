@@ -45,9 +45,9 @@
         </when>
         <when value="text">
             <param help="Repeat region start base"
-                label="genomic_region_start" name="genomic_region_start" type="int"/>
+                label="genomic_region_start" name="genomic_region_start" type="integer"/>
             <param help="Repeat region end base"
-                label="genomic_region_end" name="genomic_region_end" type="int"/>
+                label="genomic_region_end" name="genomic_region_end" type="integer"/>
         </when>
     </conditional>
 
