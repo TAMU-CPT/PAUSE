@@ -14,7 +14,7 @@ from galaxygetopt.ggo import GalaxyGetOpt as GGO
 @contextmanager
 def indexed_bam(bam_file):
     if not os.path.exists(bam_file.name + ".bai"):
-        pysam.index(bam_file)
+        pysam.index(bam_file.name)
     sam_reader = pysam.Samfile(bam_file.name, "rb")
     yield sam_reader
     sam_reader.close()
