@@ -22,14 +22,14 @@
 
 --repeat_fa_files_path "${repeat_fa.files_path}"
 
---repeat_fa_format "${repeat_fa_format}"
+--repeat_fa_format "Fasta"
 
 --repeat_fa_id "${repeat_fa.id}"
 
 </command>
   <inputs>
     <param help="Input fasta genome" label="genome" name="genome"
-        optional="True" type="data"/>
+        optional="True" type="data" format="fasta"/>
 
     <param help="Region of the genome which is a repeat" label="genomic_region"
         name="genomic_region" optional="True" type="data"/>

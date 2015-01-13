@@ -24,32 +24,24 @@
 
 --pause_plot_files_path "${pause_plot.files_path}"
 
---pause_plot_format "${pause_plot_format}"
+--pause_plot_format "TXT"
 
 --pause_plot_id "${pause_plot.id}"
 
 </command>
   <inputs>
     <repeat name="repeat_coverage" title="Coverage">
-      <param help="Coverage files" label="coverage" name="coverage" optional="True" type="data"/>
+      <param help="Coverage files" label="coverage" name="coverage" optional="True" type="data" format="wig"/>
     </repeat>
     <repeat name="repeat_starts" title="Starts">
-      <param help="Start files" label="starts" name="starts" optional="True" type="data"/>
+      <param help="Start files" label="starts" name="starts" optional="True" type="data" format="wig"/>
     </repeat>
     <repeat name="repeat_highlights" title="Highlights">
-      <param help="Data Highlights" label="highlights" name="highlights" optional="True" type="data"/>
+      <param help="Data Highlights" label="highlights" name="highlights" optional="True" type="data" format="wig"/>
     </repeat>
-    <param help="PAUSE Plot" label="Format of pause_plot" name="pause_plot_format" optional="False" type="select">
-      <option value="CONF">CONF</option>
-      <option selected="True" value="TXT">TXT</option>
-    </param>
   </inputs>
   <outputs>
-    <data format="TXT" name="pause_plot">
-      <change_format>
-        <when format="txt" input="pause_plot_format" value="CONF"/>
-        <when format="txt" input="pause_plot_format" value="TXT"/>
-      </change_format>
+    <data format="svg" name="pause_plot">
     </data>
   </outputs>
   <help>PAUSE: Plotter
