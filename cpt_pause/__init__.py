@@ -91,7 +91,7 @@ class Gfx(object):
 
         svg = svgwrite.Drawing(size=("%spx" % width,
                                      "%spx" % ((number_of_rows + 2) *
-                                               self.row_height)))
+                                               1.2 * self.row_height)))
 
         for subset_idx in range(number_of_rows):
             row_y_offset = ((self.row_sep + self.row_height) * subset_idx) \

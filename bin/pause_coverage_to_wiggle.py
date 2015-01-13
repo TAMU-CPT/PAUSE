@@ -51,15 +51,19 @@ def coverage_data(bam_file):
                 # start is  13395
                 # end is 13537
 
-                for i in range(col.pos, col.aend):
-                    if col.is_reverse:
-                        if i not in map_r:
-                            map_r[i] = 0
-                        map_r[i] += 1
-                    else:
-                        if i not in map_f:
-                            map_f[i] = 0
-                        map_f[i] += 1
+                try:
+                    for i in range(col.pos, col.aend):
+                        if col.is_reverse:
+                            if i not in map_r:
+                                map_r[i] = 0
+                            map_r[i] += 1
+                        else:
+                            if i not in map_f:
+                                map_f[i] = 0
+                            map_f[i] += 1
+                except:
+                    # HMmmmmmm.
+                    pass
             # Write to file
             data_f += gen_header(bam_file.name, 'f')
             data_f += "variableStep chrom=%s\n" % chrom
