@@ -1,5 +1,7 @@
 # PAUSE v2
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.154119.svg)](https://doi.org/10.5281/zenodo.154119)
+
 This is a comlpete re-write of PAUSE based on more standard technologies like
 Wig/BigWig and bx-python
 
